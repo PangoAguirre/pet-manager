@@ -3,7 +3,7 @@ services:
     name: petmanager-app
     runtime: docker
     repo: https://github.com/camiloloaiza03/pet-manager.git
-    branch: test_camilo
+    branch: main
     dockerfilePath: ./Dockerfile.render
     region: oregon
     plan: free
