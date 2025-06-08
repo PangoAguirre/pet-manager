@@ -7,10 +7,8 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     openjdk21-jdk \
-    maven
-
-# Instalar docker-compose
-RUN pip3 install docker-compose
+    maven \
+    docker-compose
 
 # Configurar Java
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
