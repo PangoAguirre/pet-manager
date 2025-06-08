@@ -1,0 +1,141 @@
+# ============================================
+# CONFIGURACIÓN DE PRODUCCIÓN - NOTIFICATION SERVICE
+# ============================================
+
+server:
+  port: ${PORT:8083}  # Render asigna puerto dinámico vía variable PORT
+
+spring:
+  application:
+    name: notification-service
+
+  # ================================================
+  # CONFIGURACIÓN DE BASE DE DATOS AIVEN
+  # ================================================
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+    # Configuración de conexión para producción
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  # ================================================
+  # CONFIGURACIÓN JPA/HIBERNATE
+  # ================================================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false  # Deshabilitado en producción
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  # ================================================
+  # CONFIGURACIÓN GRAPHQL
+  # ================================================
+  graphql:
+    schema:
+      locations: classpath:/graphql/
+    path: /graphql
+    graphiql:
+      enabled: true
+      path: /graphiql
+
+  # ================================================
+  # CONFIGURACIÓN EMAIL BREVO
+  # ================================================
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${BREVO_USERNAME}
+    password: ${BREVO_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp-relay.brevo.com
+            protocols: TLSv1.2
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
+# ================================================
+# CONFIGURACIÓN PERSONALIZADA
+# ================================================
+
+# URLs de otros microservicios
+services:
+  supplier-service:
+    url: ${SUPPLIER_SERVICE_URL:https://petmanager-supplier-service.onrender.com}
+  auth-service:
+    url: ${AUTH_SERVICE_URL:https://petmanager-auth-service.onrender.com}
+
+# Configuración de notificaciones
+notifications:
+  dias-alerta: ${DIAS_ALERTA:7,3,1,0}
+  max-intentos: ${MAX_INTENTOS:3}
+  intervalo-reintento: 30
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+    cron: ${SCHEDULER_CRON:0 0 8 * * ?}  # Diario a las 8 AM
+    pool-size: 3
+    thread-name-prefix: "notification-scheduler-"
+    await-termination-seconds: 60
+
+# Configuración de email
+brevo:
+  sender:
+    email: ${SENDER_EMAIL:camiloloaiza0303@gmail.com}
+    name: ${SENDER_NAME:PetManager Notificaciones}
+  api:
+    key: ${BREVO_API_KEY:}
+    url: https://api.brevo.com/v3/smtp/email
+
+# ================================================
+# CONFIGURACIÓN DE ACTUATOR (MONITOREO)
+# ================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ================================================
+# CONFIGURACIÓN DE FEIGN CLIENTS
+# ================================================
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 10000
+
+# ================================================
+# CONFIGURACIÓN DE LOGGING
+# ================================================
+logging:
+  level:
+    com.petmanager.notification_service: INFO
+    org.springframework.mail: WARN
+    org.springframework.cloud.openfeign: INFO
+    feign: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
