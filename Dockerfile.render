@@ -1,0 +1,61 @@
+FROM docker:24-dind
+
+# Instalar dependencias
+RUN apk add --no-cache \
+    curl \
+    bash \
+    python3 \
+    py3-pip \
+    docker-compose
+
+# Instalar docker-compose
+RUN pip3 install docker-compose
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos del proyecto
+COPY . .
+
+# Copiar configuración de docker-compose para producción
+COPY docker-compose.production.yml docker-compose.yml
+
+# Copiar configuración de nginx
+COPY nginx.conf nginx.conf
+
+# Script de inicio
+RUN cat > start.sh << 'EOF'
+#!/bin/bash
+
+echo "🚀 Iniciando PetManager en Render..."
+
+# Iniciar Docker daemon en background
+dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 &
+
+# Esperar a que Docker esté listo
+echo "⏳ Esperando Docker daemon..."
+timeout 30s bash -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+
+if [ $? -ne 0 ]; then
+    echo "❌ Error: Docker daemon no se inició correctamente"
+    exit 1
+fi
+
+echo "✅ Docker daemon iniciado"
+
+# Construir e iniciar servicios
+echo "🏗️ Construyendo servicios..."
+docker-compose build --parallel
+
+echo "🚀 Iniciando servicios..."
+docker-compose up --remove-orphans
+
+EOF
+
+RUN chmod +x start.sh
+
+# Exponer puerto 80 (nginx)
+EXPOSE 80
+
+# Comando de inicio
+CMD ["./start.sh"]

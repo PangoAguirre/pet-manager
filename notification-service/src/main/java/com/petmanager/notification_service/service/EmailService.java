@@ -262,27 +262,6 @@ public class EmailService {
     }
 
     /**
-     * Verifica si el servicio de email está disponible
-     */
-    public boolean verificarServicioEmail() {
-        try {
-            log.info("🔍 Verificando conexión con Brevo SMTP...");
-
-            // Solo validar configuración, no enviar
-            log.info("✅ Configuración SMTP válida");
-            log.info("   📤 Servidor: smtp-relay.brevo.com:587");
-            log.info("   👤 Usuario: configurado");
-            log.info("   🔐 Autenticación: habilitada");
-
-            return true;
-
-        } catch (Exception e) {
-            log.error("❌ Error verificando servicio de email: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    /**
      * Envía email de prueba para verificar configuración
      */
     public boolean enviarEmailPrueba(String destinatario) {
@@ -294,13 +273,13 @@ public class EmailService {
 
             helper.setFrom(senderEmail, senderName);
             helper.setTo(destinatario);
-            helper.setSubject("🧪 Prueba de configuración - PetManager");
+            helper.setSubject("🧪 Prueba de configuración - PetManager Notification Service");
 
             String contenidoPrueba = """
                 <html>
                 <body style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="color: #28a745;">✅ Configuración de Brevo Exitosa</h2>
-                    <p>Este es un email de prueba del sistema PetManager.</p>
+                    <h2 style="color: #28a745;">✅ Notification Service - Email Test</h2>
+                    <p>Este es un email de prueba del <strong>notification-service</strong> de PetManager.</p>
                     <p><strong>Configuración:</strong></p>
                     <ul>
                         <li>Servidor SMTP: smtp-relay.brevo.com</li>
@@ -321,23 +300,13 @@ public class EmailService {
                 """;
 
             helper.setText(contenidoPrueba, true);
-
-            // Enviar email
             mailSender.send(message);
 
             log.info("✅ EMAIL DE PRUEBA ENVIADO EXITOSAMENTE VIA BREVO");
-            log.info("   📧 Destinatario: {}", destinatario);
-            log.info("   📤 Remitente: {} <{}>", senderName, senderEmail);
-
             return true;
 
-        } catch (MessagingException e) {
-            log.error("❌ Error de configuración SMTP: {}", e.getMessage());
-            log.error("   🔧 Verificar credenciales SMTP en variables de entorno");
-            return false;
-
         } catch (Exception e) {
-            log.error("💥 Error enviando email de prueba: {}", e.getMessage(), e);
+            log.error("❌ Error enviando email de prueba: {}", e.getMessage(), e);
             return false;
         }
     }
