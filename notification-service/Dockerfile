@@ -1,29 +1,40 @@
 FROM openjdk:21-jdk-slim
 
 LABEL maintainer="PetManager Team"
-LABEL service="notification-service"
+LABEL service="auth-service"
 
+# Instalar curl para health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
+# Variables de ambiente
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
-ENV SPRING_PROFILES_ACTIVE=docker
+ENV SPRING_PROFILES_ACTIVE=production
 
 WORKDIR /app
 
-COPY notification-service/pom.xml ./
-COPY notification-service/.mvn .mvn
-COPY notification-service/mvnw ./
+# Copiar archivos Maven
+COPY pom.xml ./
+COPY .mvn .mvn
+COPY mvnw ./
 
+# Hacer ejecutable mvnw
 RUN chmod +x mvnw
+
+# Descargar dependencias (cache layer)
 RUN ./mvnw dependency:go-offline -B
 
-COPY notification-service/src ./src
+# Copiar código fuente (incluyendo application-production.yml)
+COPY src ./src
 
+# Construir aplicación
 RUN ./mvnw clean package -DskipTests
 
-EXPOSE 8083
+# Exponer puerto (Render usa variable PORT)
+EXPOSE $PORT
 
-CMD ["java", "-jar", "/app/target/notification-service-0.0.1-SNAPSHOT.jar"]
-
+# Health check usando variable PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8083/actuator/health || exit 1
+  CMD curl -f http://localhost:$PORT/actuator/health || exit 1
+
+# Comando de inicio con puerto dinámico
+CMD ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar /app/target/auth-service-0.0.1-SNAPSHOT.jar"]
