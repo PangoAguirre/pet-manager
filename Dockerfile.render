@@ -1,0 +1,95 @@
+FROM docker:24-dind
+
+# Instalar dependencias necesarias para Render
+RUN apk add --no-cache \
+    curl \
+    bash \
+    python3 \
+    py3-pip \
+    openjdk21-jdk \
+    maven \
+    wget
+
+# Instalar docker-compose
+RUN pip3 install docker-compose
+
+# Configurar Java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos del proyecto
+COPY . .
+
+# Copiar configuración de docker-compose para producción
+COPY docker-compose.production.yml docker-compose.yml
+
+# Copiar configuración de nginx
+COPY nginx.conf nginx.conf
+
+# Script de inicio optimizado para Render
+RUN cat > start.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Iniciando PetManager en Render..."
+
+# Verificar variables críticas
+if [ -z "$DB_URL" ]; then
+    echo "❌ Error: DB_URL no configurada"
+    exit 1
+fi
+
+echo "✅ Variables verificadas"
+
+# Configurar memoria limitada para Render free tier
+export MAVEN_OPTS="-Xmx256m -Xms128m"
+export JAVA_TOOL_OPTIONS="-Xmx256m -Xms128m"
+
+# Dar permisos a scripts
+find . -name "mvnw" -exec chmod +x {} \; 2>/dev/null || true
+chmod +x ./build-and-run.sh 2>/dev/null || true
+
+echo "🐳 Iniciando Docker daemon..."
+dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 &
+
+# Esperar Docker daemon con más tiempo para Render
+echo "⏳ Esperando Docker daemon..."
+timeout 120s bash -c 'until docker info > /dev/null 2>&1; do
+    echo "  - Intentando conectar..."
+    sleep 3
+done'
+
+if [ $? -ne 0 ]; then
+    echo "❌ Error: Docker daemon no se inició"
+    exit 1
+fi
+
+echo "✅ Docker daemon listo"
+
+# Limpiar recursos para liberar memoria
+echo "🧹 Optimizando memoria..."
+docker system prune -f --volumes || true
+
+echo "🏗️ Construyendo servicios (esto puede tomar varios minutos)..."
+docker-compose build --no-cache --parallel
+
+echo "🚀 Iniciando servicios..."
+exec docker-compose up --remove-orphans --force-recreate
+
+EOF
+
+# Hacer ejecutable el script
+RUN chmod +x start.sh
+
+# Exponer puerto 80 (nginx)
+EXPOSE 80
+
+# Health check optimizado para Render
+HEALTHCHECK --interval=30s --timeout=15s --start-period=300s --retries=5 \
+  CMD curl -f http://localhost/health || exit 1
+
+# Comando de inicio
+CMD ["./start.sh"]
