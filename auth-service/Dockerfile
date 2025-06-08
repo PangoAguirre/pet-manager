@@ -1,29 +1,117 @@
-FROM openjdk:21-jdk-slim
+# ============================================
+# CONFIGURACIÓN DE PRODUCCIÓN - AUTH SERVICE
+# ============================================
 
-LABEL maintainer="PetManager Team"
-LABEL service="auth-service"
+server:
+  port: ${PORT:8081}  # Render asigna puerto dinámico vía variable PORT
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+spring:
+  application:
+    name: auth-service
 
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
-ENV SPRING_PROFILES_ACTIVE=docker
+  # ================================================
+  # CONFIGURACIÓN DE BASE DE DATOS AIVEN
+  # ================================================
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
-WORKDIR /app
+    # Configuración de conexión para producción
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
 
-COPY auth-service/pom.xml ./
-COPY auth-service/.mvn .mvn
-COPY auth-service/mvnw ./
+  # ================================================
+  # CONFIGURACIÓN JPA/HIBERNATE
+  # ================================================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false  # Deshabilitado en producción
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+  # ================================================
+  # CONFIGURACIÓN GRAPHQL
+  # ================================================
+  graphql:
+    schema:
+      locations: classpath:/graphql/
+    path: /graphql
+    graphiql:
+      enabled: true
+      path: /graphiql
 
-COPY auth-service/src ./src
+  # ================================================
+  # CONFIGURACIÓN EMAIL BREVO
+  # ================================================
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${BREVO_USERNAME}
+    password: ${BREVO_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp-relay.brevo.com
+            protocols: TLSv1.2
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
-RUN ./mvnw clean package -DskipTests
+# ================================================
+# CONFIGURACIÓN PERSONALIZADA
+# ================================================
+mail:
+  from: ${SENDER_EMAIL:camiloloaiza0303@gmail.com}
+  sender:
+    name: ${SENDER_NAME:PetManager}
 
-EXPOSE 8081
+frontend:
+  url: ${FRONTEND_URL:https://petstore-feat2-front.vercel.app}
 
-CMD ["java", "-jar", "/app/target/auth-service-0.0.1-SNAPSHOT.jar"]
+# ================================================
+# CONFIGURACIÓN DE ACTUATOR (MONITOREO)
+# ================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8081/actuator/health || exit 1
+# ================================================
+# CONFIGURACIÓN DE LOGGING
+# ================================================
+logging:
+  level:
+    com.petmanager.auth_service: INFO
+    org.springframework.mail: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ================================================
+# CONFIGURACIÓN DE SEGURIDAD
+# ================================================
+spring.security:
+  debug: false  # Deshabilitado en producción
