@@ -1,117 +1,40 @@
-# ============================================
-# CONFIGURACIÓN DE PRODUCCIÓN - AUTH SERVICE
-# ============================================
+FROM openjdk:21-jdk-slim
 
-server:
-  port: ${PORT:8081}  # Render asigna puerto dinámico vía variable PORT
+LABEL maintainer="PetManager Team"
+LABEL service="auth-service"
 
-spring:
-  application:
-    name: auth-service
+# Instalar curl para health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-  # ================================================
-  # CONFIGURACIÓN DE BASE DE DATOS AIVEN
-  # ================================================
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+# Variables de ambiente
+ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV SPRING_PROFILES_ACTIVE=production
 
-    # Configuración de conexión para producción
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      leak-detection-threshold: 60000
+WORKDIR /app
 
-  # ================================================
-  # CONFIGURACIÓN JPA/HIBERNATE
-  # ================================================
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false  # Deshabilitado en producción
-    properties:
-      hibernate:
-        format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        jdbc:
-          time_zone: UTC
+# Copiar archivos Maven
+COPY pom.xml ./
+COPY .mvn .mvn
+COPY mvnw ./
 
-  # ================================================
-  # CONFIGURACIÓN GRAPHQL
-  # ================================================
-  graphql:
-    schema:
-      locations: classpath:/graphql/
-    path: /graphql
-    graphiql:
-      enabled: true
-      path: /graphiql
+# Hacer ejecutable mvnw
+RUN chmod +x mvnw
 
-  # ================================================
-  # CONFIGURACIÓN EMAIL BREVO
-  # ================================================
-  mail:
-    host: smtp-relay.brevo.com
-    port: 587
-    username: ${BREVO_USERNAME}
-    password: ${BREVO_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          ssl:
-            trust: smtp-relay.brevo.com
-            protocols: TLSv1.2
-          connectiontimeout: 10000
-          timeout: 10000
-          writetimeout: 10000
+# Descargar dependencias (cache layer)
+RUN ./mvnw dependency:go-offline -B
 
-# ================================================
-# CONFIGURACIÓN PERSONALIZADA
-# ================================================
-mail:
-  from: ${SENDER_EMAIL:camiloloaiza0303@gmail.com}
-  sender:
-    name: ${SENDER_NAME:PetManager}
+# Copiar código fuente (incluyendo application-production.yml)
+COPY src ./src
 
-frontend:
-  url: ${FRONTEND_URL:https://petstore-feat2-front.vercel.app}
+# Construir aplicación
+RUN ./mvnw clean package -DskipTests
 
-# ================================================
-# CONFIGURACIÓN DE ACTUATOR (MONITOREO)
-# ================================================
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+# Exponer puerto (Render usa variable PORT)
+EXPOSE $PORT
 
-# ================================================
-# CONFIGURACIÓN DE LOGGING
-# ================================================
-logging:
-  level:
-    com.petmanager.auth_service: INFO
-    org.springframework.mail: WARN
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql.BasicBinder: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+# Health check usando variable PORT
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:$PORT/actuator/health || exit 1
 
-# ================================================
-# CONFIGURACIÓN DE SEGURIDAD
-# ================================================
-spring.security:
-  debug: false  # Deshabilitado en producción
+# Comando de inicio con puerto dinámico
+CMD ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar /app/target/auth-service-0.0.1-SNAPSHOT.jar"]
