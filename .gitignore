@@ -56,12 +56,22 @@ logs/
 .env
 .env.local
 .env.production
+.env.development
+.env.staging
+.env.aiven
 .env.template
 *.env
+!.env.example
 
-# Spring Boot
-application-*.properties
-application-*.yml
+# Spring Boot - Excluir solo archivos sensibles específicos
+application-local.properties
+application-dev.properties
+application-secrets.properties
+# Permitir archivos de configuración de producción para deployment
+!application-production.properties
+!application-production.yml
+!application-docker.properties
+!application-docker.yml
 
 # Temporary files
 *.tmp
@@ -83,3 +93,10 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# Credenciales y archivos sensibles específicos
+*password*
+*secret*
+*key*
+!render-config.yml
+!docker-compose*.yml
