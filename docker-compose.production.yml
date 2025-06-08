@@ -12,6 +12,7 @@ services:
       - BREVO_SMTP_PASSWORD=${BREVO_SMTP_PASSWORD}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_NAME=${SENDER_NAME}
+      - FRONTEND_URL=${FRONTEND_URL}
       - JAVA_OPTS=-Xmx512m -Xms256m
       - SPRING_PROFILES_ACTIVE=production
     ports:
@@ -23,6 +24,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   supplier-service:
@@ -45,6 +47,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   notification-service:
@@ -58,17 +61,18 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - BREVO_USERNAME=${BREVO_USERNAME}
       - BREVO_SMTP_PASSWORD=${BREVO_SMTP_PASSWORD}
+      - BREVO_API_KEY=${BREVO_API_KEY}
       - SENDER_EMAIL=${SENDER_EMAIL}
       - SENDER_NAME=${SENDER_NAME}
       - JAVA_OPTS=-Xmx512m -Xms256m
       - SPRING_PROFILES_ACTIVE=production
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - SUPPLIER_SERVICE_URL=http://supplier-service:8082
     ports:
       - "8083:8083"
     depends_on:
-      - auth-service
-      - supplier-service
+      auth-service:
+        condition: service_healthy
+      supplier-service:
+        condition: service_healthy
     networks:
       - petmanager-network
     healthcheck:
@@ -76,6 +80,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   api-gateway:
@@ -86,15 +91,16 @@ services:
     environment:
       - JAVA_OPTS=-Xmx512m -Xms256m
       - SPRING_PROFILES_ACTIVE=production
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - SUPPLIER_SERVICE_URL=http://supplier-service:8082
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8083
+      - FRONTEND_URL=${FRONTEND_URL}
     ports:
       - "8080:8080"
     depends_on:
-      - auth-service
-      - supplier-service
-      - notification-service
+      auth-service:
+        condition: service_healthy
+      supplier-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
     networks:
       - petmanager-network
     healthcheck:
@@ -102,6 +108,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   nginx:
@@ -112,9 +119,15 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
     networks:
       - petmanager-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
 networks:
