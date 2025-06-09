@@ -1,0 +1,106 @@
+# ============================================
+# CONFIGURACIÓN DE PRODUCCIÓN - API GATEWAY
+# ============================================
+
+server:
+  port: ${PORT:8080}  # Render asigna puerto dinámico vía variable PORT
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Configuración CORS global para producción
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "https://*.vercel.app"
+              - "https://*.netlify.app"
+              - "https://*.render.com"
+              - "https://petstore-feat2-front.vercel.app"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # Rutas de microservicios en producción
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:https://petmanager-auth-service.onrender.com}
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+        - id: supplier-service
+          uri: ${SUPPLIER_SERVICE_URL:https://petmanager-supplier-service.onrender.com}
+          predicates:
+            - Path=/supplier/**
+          filters:
+            - StripPrefix=1
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:https://petmanager-notification-service.onrender.com}
+          predicates:
+            - Path=/notification/**
+          filters:
+            - StripPrefix=1
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+        # Ruta para GraphQL del auth-service
+        - id: auth-graphql
+          uri: ${AUTH_SERVICE_URL:https://petmanager-auth-service.onrender.com}
+          predicates:
+            - Path=/auth/graphql, /auth/graphiql
+          filters:
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+        # Ruta para GraphQL del supplier-service
+        - id: supplier-graphql
+          uri: ${SUPPLIER_SERVICE_URL:https://petmanager-supplier-service.onrender.com}
+          predicates:
+            - Path=/supplier/graphql, /supplier/graphiql
+          filters:
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+        # Ruta para GraphQL del notification-service
+        - id: notification-graphql
+          uri: ${NOTIFICATION_SERVICE_URL:https://petmanager-notification-service.onrender.com}
+          predicates:
+            - Path=/notification/graphql, /notification/graphiql
+          filters:
+            - AddRequestHeader=X-Gateway-Source, api-gateway
+
+# ================================================
+# CONFIGURACIÓN DE ACTUATOR (MONITOREO)
+# ================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+# ================================================
+# CONFIGURACIÓN DE LOGGING
+# ================================================
+logging:
+  level:
+    com.petmanager.api_gateway: INFO
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web.cors: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
