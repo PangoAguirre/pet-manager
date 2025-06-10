@@ -21,6 +21,10 @@ spring:
               - "https://*.netlify.app"
               - "https://*.render.com"
               - "https://petstore-feat2-front.vercel.app"
+              - "https://www.google.com"           # ← AGREGADO: Para testing
+              - "https://google.com"               # ← AGREGADO: Para testing
+              - "https://*.google.com"             # ← AGREGADO: Para testing
+              - "null"                             # ← AGREGADO: Para requests locales
             allowedMethods:
               - GET
               - POST
@@ -29,8 +33,21 @@ spring:
               - OPTIONS
               - PATCH
             allowedHeaders: "*"
-            allowCredentials: true
+            allowCredentials: false                # ← CAMBIADO: De true a false
             maxAge: 3600
+
+      # ========================================
+      # CONFIGURACIÓN ANTI-REDIRECCIÓN
+      # ========================================
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 30s
+        follow-redirects: false                  # ← AGREGADO: Evitar redirects
+
+      # Filtros globales para evitar redirecciones
+      default-filters:                           # ← AGREGADO: Filtros globales
+        - RemoveRequestHeader=Host
+        - AddRequestHeader=X-Forwarded-Proto, https
 
       # Rutas de microservicios en producción
       routes:
@@ -41,6 +58,8 @@ spring:
           filters:
             - StripPrefix=1
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-auth-service.onrender.com  # ← AGREGADO
 
         - id: supplier-service
           uri: ${SUPPLIER_SERVICE_URL:https://petmanager-supplier-service.onrender.com}
@@ -49,6 +68,8 @@ spring:
           filters:
             - StripPrefix=1
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-supplier-service.onrender.com  # ← AGREGADO
 
         - id: notification-service
           uri: ${NOTIFICATION_SERVICE_URL:https://petmanager-notification-service.onrender.com}
@@ -57,6 +78,8 @@ spring:
           filters:
             - StripPrefix=1
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-notification-service.onrender.com  # ← AGREGADO
 
         # Ruta para GraphQL del auth-service
         - id: auth-graphql
@@ -65,6 +88,8 @@ spring:
             - Path=/auth/graphql, /auth/graphiql
           filters:
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-auth-service.onrender.com  # ← AGREGADO
 
         # Ruta para GraphQL del supplier-service
         - id: supplier-graphql
@@ -73,6 +98,8 @@ spring:
             - Path=/supplier/graphql, /supplier/graphiql
           filters:
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-supplier-service.onrender.com  # ← AGREGADO
 
         # Ruta para GraphQL del notification-service
         - id: notification-graphql
@@ -81,6 +108,8 @@ spring:
             - Path=/notification/graphql, /notification/graphiql
           filters:
             - AddRequestHeader=X-Gateway-Source, api-gateway
+            - RemoveRequestHeader=Host                    # ← AGREGADO
+            - AddRequestHeader=Host, petmanager-notification-service.onrender.com  # ← AGREGADO
 
 # ================================================
 # CONFIGURACIÓN DE ACTUATOR (MONITOREO)
