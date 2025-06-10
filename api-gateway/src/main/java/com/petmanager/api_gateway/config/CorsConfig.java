@@ -17,29 +17,50 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        log.info("🌐 Configurando CORS para API Gateway (TESTING MODE)...");
+        log.info("🌐 Configurando CORS para API Gateway (PRODUCTION MODE)...");
 
         // ========================================
-        // PERMITIR TODOS LOS ORÍGENES (para testing)
+        // PERMITIR DOMINIOS ESPECÍFICOS + DESARROLLO
         // ========================================
-        corsConfiguration.addAllowedOriginPattern("*");
+        corsConfiguration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "https://*.vercel.app",
+                "https://*.netlify.app",
+                "https://*.render.com",
+                "https://petstore-feat2-front.vercel.app",
+                "https://www.google.com",      // ← NUEVO: Para tu compañero
+                "https://google.com",          // ← NUEVO: Para tu compañero
+                "https://*.google.com",        // ← NUEVO: Subdominios Google
+                "file://*",                    // ← NUEVO: Para archivos locales
+                "null"                         // ← NUEVO: Para requests sin origin
+        ));
 
         // ========================================
         // MÉTODOS HTTP PERMITIDOS
         // ========================================
         corsConfiguration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
 
         // ========================================
         // HEADERS PERMITIDOS
         // ========================================
-        corsConfiguration.addAllowedHeader("*");
+        corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
+
+        // ========================================
+        // HEADERS EXPUESTOS
+        // ========================================
+        corsConfiguration.setExposedHeaders(Arrays.asList(
+                "Content-Type",
+                "Authorization",
+                "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"
+        ));
 
         // ========================================
         // CONFIGURACIONES ADICIONALES
         // ========================================
-        corsConfiguration.setAllowCredentials(false); // Cambié a false para evitar conflictos con *
+        corsConfiguration.setAllowCredentials(false);  // ← CAMBIADO: Más permisivo
         corsConfiguration.setMaxAge(3600L);
 
         // ========================================
@@ -48,10 +69,10 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
 
-        log.info("✅ CORS configurado en TESTING MODE:");
-        log.info("   🌍 Orígenes: TODOS permitidos (*)");
-        log.info("   🔧 Métodos: GET, POST, PUT, DELETE, OPTIONS, PATCH");
-        log.info("   🔑 Credenciales: Deshabilitadas (testing)");
+        log.info("✅ CORS configurado en PRODUCTION MODE:");
+        log.info("   🌍 Orígenes: Localhost + Vercel + Netlify + Render + Google");
+        log.info("   🔧 Métodos: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
+        log.info("   🔑 Credenciales: Deshabilitadas");
         log.info("   ⏰ Max Age: 3600 segundos");
 
         return new CorsWebFilter(source);
