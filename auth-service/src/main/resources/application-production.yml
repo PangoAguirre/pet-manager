@@ -1,6 +1,6 @@
 server:
   port: ${PORT:8081}
-
+  forward-headers-strategy: framework
 spring:
   application:
     name: auth-service
@@ -83,10 +83,16 @@ logging:
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: true
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
-    operations-sorter: method
+    operations-sorter: alpha
     tags-sorter: alpha
     try-it-out-enabled: true
-    disable-swagger-default-url: true
+    filter: true
+    display-request-duration: true
+  show-actuator: false
+
+
+
