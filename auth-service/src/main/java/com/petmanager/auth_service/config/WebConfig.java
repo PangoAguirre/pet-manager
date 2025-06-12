@@ -11,7 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        log.info("🌐 Configurando CORS en Auth Service...");
+        log.info(" Configurando CORS en Auth Service...");
 
         registry.addMapping("/**")
                 .allowedOriginPatterns("*")
@@ -20,6 +20,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(false)
                 .maxAge(3600);
 
-        log.info("✅ CORS configurado en Auth Service para todos los orígenes");
+        log.info(" CORS configurado en Auth Service");
     }
 }
