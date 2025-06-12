@@ -28,11 +28,10 @@ public class CorsConfig {
                 "https://*.netlify.app",
                 "https://*.render.com",
                 "https://petstore-feat2-front.vercel.app",
-                "https://www.google.com",      // ← NUEVO: Para tu compañero
-                "https://google.com",          // ← NUEVO: Para tu compañero
-                "https://*.google.com",        // ← NUEVO: Subdominios Google
-                "file://*",                    // ← NUEVO: Para archivos locales
-                "null"                         // ← NUEVO: Para requests sin origin
+                "https://www.google.com",
+                "https://google.com",
+                "file://*",
+                "null"
         ));
 
         // ========================================
