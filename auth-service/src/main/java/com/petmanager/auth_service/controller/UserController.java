@@ -1,17 +1,24 @@
 package com.petmanager.auth_service.controller;
 
-import java.util.ArrayList;
-import com.petmanager.auth_service.dto.UserResponse;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 import com.petmanager.auth_service.dto.UserRequest;
-import com.petmanager.auth_service.service.UserService;
-import com.petmanager.auth_service.service.JwtService;
+import com.petmanager.auth_service.dto.UserResponse;
 import com.petmanager.auth_service.model.User;
 import com.petmanager.auth_service.repository.UserRepository;
+import com.petmanager.auth_service.service.JwtService;
+import com.petmanager.auth_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/users")
