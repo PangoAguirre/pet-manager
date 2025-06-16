@@ -36,7 +36,8 @@ jobs:
         working-directory: auth-service
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.projectKey=jose643415_auth-service \
           -Dsonar.organization=jose643415 \
           -Dsonar.host.url=https://sonarcloud.io
@@ -69,7 +70,8 @@ jobs:
         working-directory: supplier-service
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.projectKey=jose643415_supplier-service \
           -Dsonar.organization=jose643415 \
           -Dsonar.host.url=https://sonarcloud.io
@@ -102,7 +104,8 @@ jobs:
         working-directory: notification-service
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.projectKey=jose643415_notificacion-service \
           -Dsonar.organization=jose643415 \
           -Dsonar.host.url=https://sonarcloud.io
@@ -135,7 +138,8 @@ jobs:
         working-directory: api-gateway
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.projectKey=jose643415_api-gateway \
           -Dsonar.organization=jose643415 \
           -Dsonar.host.url=https://sonarcloud.io
