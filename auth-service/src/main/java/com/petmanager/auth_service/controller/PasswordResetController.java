@@ -36,7 +36,7 @@ public class PasswordResetController {
      * Endpoint para solicitar el token de recuperación con plantilla HTML elegante
      */
     @PostMapping("/request-reset")
-    public ResponseEntity<?> requestReset(@RequestBody Map<String, String> request) {
+    public ResponseEntity<String> requestReset(@RequestBody Map<String, String> request) {
         String email = request.get("email");
 
         log.info("🔐 Solicitud de recuperación de contraseña recibida");
@@ -81,7 +81,7 @@ public class PasswordResetController {
      * Endpoint para restablecer la contraseña con el token
      */
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
         String token = request.get("token");
         String newPassword = request.get("newPassword");
 
@@ -174,7 +174,7 @@ public class PasswordResetController {
      * Endpoint para validar token (útil para el frontend)
      */
     @GetMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestParam String token) {
+    public ResponseEntity<String> validateToken(@RequestParam String token) {
         log.info("🔍 Validación de token solicitada: {}...", token.substring(0, 8));
 
         if (token == null || token.trim().isEmpty()) {
